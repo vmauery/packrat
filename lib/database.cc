@@ -716,7 +716,7 @@ _merge_threads (notmuch_database_t *notmuch,
 	}
 
 	_notmuch_message_remove_term (message, "thread", loser_thread_id);
-	_notmuch_message_add_term (message, "thread", winner_thread_id);
+	_notmuch_message_set_thread_id (message, winner_thread_id);
 	_notmuch_message_sync (message);
 
 	notmuch_message_destroy (message);
@@ -784,7 +784,7 @@ _notmuch_database_link_message_to_parents (notmuch_database_t *notmuch,
 	} else {
 	    if (*thread_id == NULL) {
 		*thread_id = talloc_strdup (message, parent_thread_id);
-		_notmuch_message_add_term (message, "thread", *thread_id);
+		_notmuch_message_set_thread_id (message, *thread_id);
 	    } else if (strcmp (*thread_id, parent_thread_id)) {
 		ret = _merge_threads (notmuch, *thread_id, parent_thread_id);
 		if (ret)
@@ -829,7 +829,7 @@ _notmuch_database_link_message_to_children (notmuch_database_t *notmuch,
 	child_thread_id = notmuch_message_get_thread_id (child_message);
 	if (*thread_id == NULL) {
 	    *thread_id = talloc_strdup (message, child_thread_id);
-	    _notmuch_message_add_term (message, "thread", *thread_id);
+		_notmuch_message_set_thread_id (message, *thread_id);
 	} else if (strcmp (*thread_id, child_thread_id)) {
 	    _notmuch_message_remove_term (child_message, "reference",
 					  message_id);

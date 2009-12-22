@@ -100,7 +100,8 @@ _internal_error (const char *format, ...) PRINTF_ATTRIBUTE (1, 2);
 
 typedef enum {
     NOTMUCH_VALUE_TIMESTAMP = 0,
-    NOTMUCH_VALUE_MESSAGE_ID
+    NOTMUCH_VALUE_MESSAGE_ID,
+    NOTMUCH_VALUE_THREAD_ID,
 } notmuch_value_t;
 
 /* Xapian (with flint backend) complains if we provide a term longer
@@ -192,6 +193,10 @@ _notmuch_message_gen_terms (notmuch_message_t *message,
 void
 _notmuch_message_set_filename (notmuch_message_t *message,
 			       const char *filename);
+
+void
+_notmuch_message_set_thread_id (notmuch_message_t *message,
+				const char *thread_id);
 
 void
 _notmuch_message_ensure_thread_id (notmuch_message_t *message);

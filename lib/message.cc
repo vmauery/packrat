@@ -607,13 +607,21 @@ thread_id_generate (thread_id_t *thread_id)
 }
 
 void
+_notmuch_message_set_thread_id (notmuch_message_t *message,
+		const char *thread_id)
+{
+    _notmuch_message_add_term (message, "thread", thread_id);
+	message->doc.add_value (NOTMUCH_VALUE_THREAD_ID, thread_id);
+}
+
+void
 _notmuch_message_ensure_thread_id (notmuch_message_t *message)
 {
     /* If not part of any existing thread, generate a new thread_id. */
     thread_id_t thread_id;
 
     thread_id_generate (&thread_id);
-    _notmuch_message_add_term (message, "thread", thread_id.str);
+    _notmuch_message_set_thread_id (message, thread_id.str);
 }
 
 /* Synchronize changes made to message->doc out into the database. */
