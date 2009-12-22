@@ -22,6 +22,7 @@
 #include "database-private.h"
 
 #include <stdint.h>
+#include <libgen.h>
 
 #include <gmime/gmime.h>
 
@@ -251,6 +252,72 @@ notmuch_message_get_message_id (notmuch_message_t *message)
     return message->message_id;
 }
 
+notmuch_message_file_t *
+_notmuch_message_file_find_open_ctx (void *ctx, notmuch_message_t *message)
+{
+    char *filename_str, *path_str;
+	char *tmp_str, *base_path;
+	struct stat sb;
+	const char **dp, **fp;
+
+    tmp_str = strdup(message->doc.get_data().c_str());
+	filename_str = strdup(basename(tmp_str));
+	path_str = strrchr(filename_str, ',');
+	/* truncate any part of the filename after the :2, */
+	if (path_str && path_str - filename_str >= 2 &&
+			path_str[1] != 0 &&
+			path_str[-2] == ':' &&
+			path_str[-1] == '2') {
+		path_str[1] = 0;
+	}
+	path_str = dirname(dirname(tmp_str));
+	asprintf(&base_path, "%s/%s", notmuch_database_get_path (message->notmuch), path_str);
+	free(tmp_str);
+
+	/* directories
+	 * Things tend to move from tmp -> new -> cur, so we should start
+	 * scanning in the cur directory if things aren't found.  If not found
+	 * there, it might be found in the new directory for some reason
+	 */
+	const char *dirs[] = { "cur", "new", NULL, /* don't look in "tmp" */ };
+	/* Draft, Flagged, Passed (bounced/forwarded), Replied, Seen, Trash */
+	const char *flags[] = {
+			"", "S", "RS", "FS", "PS", "FRS", /* these are likely the most common */
+			"D" "F", "P", "R", "T",
+			"DF", "DP", "DR", "DS", "DT", "FP", "FR",
+			"FT", "PR", "PS", "PT", "RT", "ST",
+			"DFP", "DFR", "DFS", "DFT", "DPR", "DPS", "DPT", "DRS", "DRT", "DST",
+			"FPR", "FPS", "FPT", "FRT", "FST", "PRS", "PRT", "PST", "RST",
+			"DFPR", "DFPS", "DFPT", "DPRS", "DPRT", "DRST", "FPRS", "FPRT", "FRST", "PRST",
+			"DFPRS", "DFPRT", "DFPST" "DPRST", "FPRST",
+			"DFPRST", NULL,
+		};
+
+	path_str = new char[strlen(base_path) + strlen(filename_str) + 16];
+	for (dp = dirs; *dp; dp++) {
+		for (fp = flags; *fp; fp++) {
+			sprintf(path_str, "%s/%s/%s%s", base_path, *dp, filename_str, *fp);
+			if (stat(path_str, &sb) == 0) {
+				tmp_str = talloc_strdup(message, path_str);
+				free(filename_str);
+				free(base_path);
+				delete[] path_str;
+				_notmuch_message_set_filename(message, tmp_str);
+				_notmuch_message_sync(message);
+				message->filename = tmp_str;
+				return _notmuch_message_file_open_ctx(ctx, message->filename);
+			}
+		}
+	}
+
+	/* should we be removing the file from the database? */
+	free(base_path);
+	free(filename_str);
+	delete[] path_str;
+	return NULL;
+}
+
+
 static void
 _notmuch_message_ensure_message_file (notmuch_message_t *message)
 {
@@ -264,6 +331,11 @@ _notmuch_message_ensure_message_file (notmuch_message_t *message)
 	return;
 
     message->message_file = _notmuch_message_file_open_ctx (message, filename);
+
+	if (unlikely (message->message_file == NULL)) {
+		/* message was moved or deleted.... Let's try harder */
+		message->message_file = _notmuch_message_file_find_open_ctx (message, message);
+	}
 }
 
 const char *

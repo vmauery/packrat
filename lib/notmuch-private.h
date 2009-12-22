@@ -233,6 +233,18 @@ notmuch_message_file_open (const char *filename);
 notmuch_message_file_t *
 _notmuch_message_file_open_ctx (void *ctx, const char *filename);
 
+/* Like _notmuch_message_file_open, but looks harder to find
+ * the file in case it was moved among the maildir subdirs or had
+ * a maildir flag appended to it. */
+notmuch_message_file_t *
+_notmuch_message_file_find_open(notmuch_message_t *message);
+
+/* Like _notmuch_message_file_open_ctx, but looks harder to find
+ * the file in case it was moved among the maildir subdirs or had
+ * a maildir flag appended to it. */
+notmuch_message_file_t *
+_notmuch_message_file_find_open_ctx (void *ctx, notmuch_message_t *message);
+
 /* Close a notmuch message previously opened with notmuch_message_open. */
 void
 notmuch_message_file_close (notmuch_message_file_t *message);

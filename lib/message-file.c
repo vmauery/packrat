@@ -131,6 +131,12 @@ notmuch_message_file_open (const char *filename)
     return _notmuch_message_file_open_ctx (NULL, filename);
 }
 
+notmuch_message_file_t *
+_notmuch_message_file_find_open (notmuch_message_t *message)
+{
+    return _notmuch_message_file_find_open_ctx (NULL, message);
+}
+
 void
 notmuch_message_file_close (notmuch_message_file_t *message)
 {
