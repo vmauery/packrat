@@ -88,6 +88,11 @@ _thread_add_message (notmuch_thread_t *thread,
     InternetAddress *address;
     const char *from, *author;
 
+    from = notmuch_message_get_header (message, "from");
+    if (from == NULL) {
+		/* likely that the file is gone if the from header is missing... */
+		return;
+    }
     _notmuch_message_list_add_message (thread->message_list,
 				       talloc_steal (thread, message));
     thread->total_messages++;
@@ -96,7 +101,7 @@ _thread_add_message (notmuch_thread_t *thread,
 			 xstrdup (notmuch_message_get_message_id (message)),
 			 message);
 
-    from = notmuch_message_get_header (message, "from");
+
     list = internet_address_list_parse_string (from);
     if (list) {
 	address = internet_address_list_get_address (list, 0);
