@@ -10,7 +10,8 @@ gzip = gzip
 bash_completion_dir = /etc/bash_completion.d
 
 all_deps = Makefile Makefile.local Makefile.config \
-		   lib/Makefile lib/Makefile.local
+		   lib/Makefile lib/Makefile.local \
+		   ui/Makefile ui/Makefile.local
 
 extra_cflags :=
 extra_cxxflags :=
@@ -18,9 +19,9 @@ extra_cxxflags :=
 # Now smash together user's values with our extra values
 FINAL_CFLAGS = $(CFLAGS) $(WARN_CFLAGS) $(CONFIGURE_CFLAGS) $(extra_cflags)
 FINAL_CXXFLAGS = $(CXXFLAGS) $(WARN_CXXFLAGS) $(CONFIGURE_CXXFLAGS) $(extra_cflags) $(extra_cxxflags)
-FINAL_LDFLAGS = $(LDFLAGS) $(CONFIGURE_LDFLAGS)
+FINAL_LDFLAGS = $(LDFLAGS) $(CONFIGURE_LDFLAGS) $(extra_ldflags)
 
-all: notmuch notmuch.1.gz
+all: notmuch notmuch.1.gz ui/packrat
 
 # Before including any other Makefile fragments, get settings from the
 # output of configure
@@ -36,6 +37,7 @@ Makefile.config: configure
 include Makefile.config
 
 include lib/Makefile.local
+include ui/Makefile.local
 include compat/Makefile.local
 include Makefile.local
 

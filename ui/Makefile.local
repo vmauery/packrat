@@ -1,0 +1,22 @@
+dir=ui
+extra_cflags += -I$(dir) -Ilib
+extra_ldflags += -lncurses
+
+packrat_cxx_srcs =		\
+	$(dir)/logging.cc 	\
+	$(dir)/buffer.cc \
+	$(dir)/search_buffer.cc \
+	$(dir)/thread_buffer.cc \
+	$(dir)/screen_base.cc \
+	$(dir)/search_screen.cc	\
+	$(dir)/thread_screen.cc	\
+	$(dir)/application.cc	\
+	$(dir)/packrat.cc
+
+packrat_modules = $(packrat_cxx_srcs:.cc=.o)
+
+$(dir)/packrat: $(packrat_modules) lib/notmuch.a
+	$(call quiet,CXX,$(LDFLAGS)) $^ $(FINAL_LDFLAGS) -o $@
+
+SRCS  := $(SRCS) $(packrat_cxx_srcs)
+CLEAN := $(CLEAN) $(packrat_modules) $(dir)/packrat

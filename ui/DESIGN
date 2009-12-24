@@ -1,0 +1,108 @@
+	|	* other features
+	|		* filters (a text file with regex on headers and/or body)
+	|		* setup? (a text file)
+	|	
+0 	|	* a couple of screens
+0	|		* thread
+x	|		* search results (all search results are same cost)
+	|			index (search results of tag:inbox)
+	|			tags (search results of tag:...)
+	|		* tag list (default tags of inbox, sent, drafts, and spam)
+	|		* composer (external)
+0	|			phase 0: edit entire message w/ headers
+	|			phase 1: edit only body
+	|		* message preview (send)
+	|		* address book? (a text file)
+	|		* a list of open screens
+	|		* a calendar? (I've always wanted to write a calendar....)
+	|		* saved searches
+	|	
+x	|	class screen
+0	|		scrolling pages
+x	|		cursor up/down
+0	|		cursor left/right
+x	|		action on a line
+	|		overall status on a line
+x	|		close buffer
+	|		show buffer list (jump to buffer)
+	|		goto inbox
+0	|		next buffer
+	|	
+x	|	class search_screen <- screen
+0	|		retrieve paging results (possibly in background,
+	|			to have next and prev page always available)
+	|		actions
+	|			sort order (date^v, relevance?)
+0	|			archive (entire thread)
+0	|			delete (entire thread)
+	|			spam (entire thread)
+	|			kill (entire thread)
+0	|			tag (entire thread)
+	|			forward -- forwards entire thread encapsulated
+	|			flag (entire thread)
+0	|			search for threads
+	|				search autocomplete/suggestions from index
+0	|			mark unread
+	|			save search (pseudo tag)
+	|			select threads (select all -- including other pages)
+	|				all actions on single thread can be done on multiple threads
+	|	
+0	|	class thread_screen <- screen
+0	|		contains a thread
+0	|		pages up and down in thread
+	|		take different action based on whether on collapsed
+	|			line or on regular line
+	|		actions
+	|			view source (current message)
+	|			headers (on/off for current message)
+0	|			archive (entire thread)
+0	|			delete (message or thread)
+	|			spam (message or thread)
+	|			kill (thread, sub-thread???)
+0	|			tag (thread)
+0	|			reply (-all,-list)
+0	|			forward (redirect)
+	|			flag (message or thread)
+	|			edit as new (message)
+	|			search within thread (collapsed or not)
+	|			view attachment (possibly external viewer)
+	|			run hyperlinks (http, ftp, mailto)
+	|	
+	|	class message_preview <- screen
+	|		keep list of headers (to, from, subject, reply-to, in-reply-to, references, etc)
+	|		render message with quotes uncollapsed (but collapsable)
+	|		paging up and down (standard)
+	|		actions
+	|			from options (from, reply-to?)
+	|			to options (to, cc, bcc) -- accessing address book?
+	|			edit
+	|			send
+	|			send and archive
+	|			save draft
+	|			discard
+	|			crypto options?
+	|			goto inbox (prompt save/discard)
+	|			close buffer (prompt save/discard)
+	|	
+	|	class address book?
+	|		paging up and down
+	|		search
+	|		add
+	|		possibly an ldap hook?
+	|	
+0	|	class thread
+0	|		render a one line blurb
+0	|		render the whole thread (with quoting collapsed)
+	|			highlight hyperlinks
+	|		re-render parts (expand/collapse messages)
+0	|		responds to actions from thread_screen
+	|			for marking, deleting, archiving, killing, etc.
+	|		render attachments by mime type
+	|			text/html
+	|			ical (libical0)
+	|			text/plain (if we find a patch, render it as such)
+	|				first line ^---, second line ^+++, third line ^@@...@@$
+	|			text/x-patch
+0	|			text/x-... (render as text/plain for starters)
+	|				render using vim highlighting???
+	|		launch viewer
