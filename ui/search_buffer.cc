@@ -122,6 +122,7 @@ void search_buffer::page(int line_offset) {
 	// re-run the query on the new page
 }
 const char *search_buffer::get_line(int offset) {
+	info("get_line: offset = "<<offset);
 	if (thread_lines_.find(offset) == thread_lines_.end()) {
 		notmuch_thread_t *thread = threads_[offset];
 		int author_width = 35;
@@ -134,12 +135,19 @@ const char *search_buffer::get_line(int offset) {
 		std::stringstream ss;
 		ss << left << setfill(' ')
 		   << setw(author_width) << authors.substr(0,author_width) << " ";
-		if (count > 1) {
-			ss << "(" << setw(3) << count << ")";
+		if (count > 999) {
+			ss << 999;
+		} else if (count > 1) {
+			ss << "(" << count << ")";
+			if (count < 10)
+				ss << " ";
+			if (count < 100)
+				ss << " ";
+			ss << " ";
 		} else {
-			ss << "     ";
+			ss << "      ";
 		}
-		ss << setw(subject_width) << subject.substr(0, subject_width);
+		ss << setw(subject_width) << subject;
 		thread_lines_[offset] = ss.str();
 	}
 	return thread_lines_[offset].c_str();

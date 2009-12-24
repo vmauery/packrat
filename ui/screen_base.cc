@@ -103,7 +103,7 @@ void screen_base::cursor_move_col(int count) {
 void screen_base::cursor_move_row(int count) {
 	int scroll_lines, oldc = cursor_y_;
 	cursor_y_ = minmax(count+cursor_y_, 0, rows_-1);
-	scroll_lines = cursor_y_ - (count+oldc);
+	scroll_lines = (count+oldc) - cursor_y_;
 	// erase the old cursor
 	this->erase_cursor(oldc, cursor_x_);
 	if (scroll_lines) {
@@ -125,13 +125,20 @@ void screen_base::scroll_vertical(int count) {
 	// scrolling does not move the cursor
 	// we only scroll until the last line
 	int nlines = buffer_->nlines();
+	info("scroll_vertical: row_offset_: "<<row_offset_<<", nlines: "
+	    <<nlines<<", count: "<<count<<", rows_:"<<rows_);
 	if (row_offset_ + rows_ + count >= nlines) {
-		count = nlines - row_offset_ - rows_ -1;
+		info("row_offset_+rows+count >= nlines: "<<row_offset_ + rows_ + count <<">="<<nlines);
+		count = nlines - row_offset_ - rows_;
 	} else if (row_offset_ + count < 0) {
+		info("row_offset_+count < 0: "<<row_offset_ + count <<"<0");
 		count = -row_offset_;
 	}
 	row_offset_ += count;
-	wscrl(window_, count);
+	info("scroll_vertical: row_offset_: "<<row_offset_<<", nlines: "
+	    <<nlines<<", count: "<<count<<", rows_:"<<rows_);
+	if (count)
+		wscrl(window_, count);
 	// draw more lines to fill in the void
 }
 
@@ -199,7 +206,8 @@ void screen_base::show() {
 }
 
 void screen_base::_draw_line(int row) {
-	mvwaddnstr(window_, row, 0, buffer_->get_line(row+row_offset_), cols_);
+	info("_draw_line: cols_ = " << cols_);
+	mvwaddnstr(window_, row, 0, buffer_->get_line(row+row_offset_), cols_-10);
 }
 
 void screen_base::_show_title() {
