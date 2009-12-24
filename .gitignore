@@ -9,3 +9,4 @@ notmuch.1.gz
 *~
 .*.swp
 *.elc
+packrat
