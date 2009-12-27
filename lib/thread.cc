@@ -40,6 +40,7 @@ struct _notmuch_thread {
     int matched_messages;
     time_t oldest;
     time_t newest;
+    const void * _notmuch_ctx;
 };
 
 static int
@@ -248,6 +249,7 @@ _notmuch_thread_create (void *ctx,
     if (unlikely (thread == NULL))
 	return NULL;
 
+    thread->_notmuch_ctx = ctx;
     talloc_set_destructor (thread, _notmuch_thread_destructor);
 
     thread->notmuch = notmuch;
@@ -373,5 +375,5 @@ notmuch_thread_get_tags (notmuch_thread_t *thread)
 void
 notmuch_thread_destroy (notmuch_thread_t *thread)
 {
-    talloc_free (thread);
+    talloc_unlink (thread->_notmuch_ctx, thread);
 }

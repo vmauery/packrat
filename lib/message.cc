@@ -39,6 +39,7 @@ struct _notmuch_message {
     notmuch_message_file_t *message_file;
     notmuch_message_list_t *replies;
     unsigned long flags;
+	const void *_notmuch_ctx;
 
     Xapian::Document doc;
 };
@@ -105,6 +106,7 @@ _notmuch_message_create (const void *talloc_owner,
 	    *status = NOTMUCH_PRIVATE_STATUS_OUT_OF_MEMORY;
 	return NULL;
     }
+	message->_notmuch_ctx = talloc_owner;
 
     message->notmuch = notmuch;
     message->doc_id = doc_id;
@@ -836,5 +838,5 @@ notmuch_message_thaw (notmuch_message_t *message)
 void
 notmuch_message_destroy (notmuch_message_t *message)
 {
-    talloc_free (message);
+    talloc_unlink (message->_notmuch_ctx, message);
 }
