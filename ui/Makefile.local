@@ -4,6 +4,7 @@ extra_ldflags += -lncurses
 
 packrat_cxx_srcs =		\
 	$(dir)/logging.cc 	\
+	$(dir)/settings.cc \
 	$(dir)/buffer.cc \
 	$(dir)/search_buffer.cc \
 	$(dir)/thread_buffer.cc \

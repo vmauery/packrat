@@ -24,13 +24,15 @@ using namespace packrat;
 
 // TODO: add some config file and command line stuff here
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *argv[]) {
 	// parse args
 	
 	// set up logging
 	logger::ptr log = logger::get();
 	log->add_target("log", LL_Info, true);
 	info("Welcome to packrat, the mail client for digital horders");
+
+	settings::ptr config = settings::load(argc, argv);
 
 	// create the application
 	application::ptr app = application::get();

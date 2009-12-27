@@ -22,6 +22,7 @@
 #define __PACKRAT_H__
 
 #include <logging.h>
+#include <settings.h>
 
 #define min(x, y) ({                \
 	typeof(x) _min1 = (x);          \

@@ -22,13 +22,22 @@
 #include <search_screen.h>
 #include <thread_screen.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 using namespace packrat;
+using std::string;
+using std::map;
 
 application::ptr application::instance_;
 
 application::application() {
-	db_ = notmuch_database_open("/home/vhmauery/.mail/ltc-imap", NOTMUCH_DATABASE_MODE_READ_ONLY);
+	string default_path;
+	const char *home = getenv("HOME");
+	if (home) {
+		default_path = string(home) + "/mail";
+	}
+	db_ = notmuch_database_open(settings::get("db_path", default_path).c_str(),
+			NOTMUCH_DATABASE_MODE_READ_ONLY);
 	if (!db_) {
 		error("failed to open notmuch database");
 		exit(1);
