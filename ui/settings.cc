@@ -19,6 +19,7 @@
  */
 
 #include <settings.h>
+#include <stdlib.h>
 
 using namespace packrat;
 using std::string;
@@ -57,4 +58,11 @@ string settings::item(string name, string def) {
 		return items_[name];
 	}
 	return def;
+}
+
+string settings::env(string name) {
+	char *v = getenv(name.c_str());
+	if (!v)
+		return string();
+	return v;
 }

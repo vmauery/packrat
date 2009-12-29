@@ -33,6 +33,24 @@
 #include <fstream>
 #include <vector>
 #include <logging.h>
+#include <stdarg.h>
+#include <stdio.h>
+
+#ifdef THREADED
+#include <pthread.h>
+
+static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#define lock(A) pthread_mutex_lock(A)
+#define unlock(A) pthread_mutex_unlock(A)
+
+#else
+
+#define lock(A) do { } while(0)
+#define unlock(A) do { } while(0)
+
+#endif
+
 
 using namespace packrat;
 
@@ -121,5 +139,19 @@ void logger::write(const std::string& filename, int line, const char *msg, size_
 			iter->outstream->flush();
 	}
 	
+}
+
+extern "C"
+void _log(int severity, const char *file, int line, const char *fmt, ...) {
+	va_list ap;
+	char *msg;
+	int len;
+
+	va_start(ap, fmt);
+	len = asprintf(&msg, fmt, ap);
+	va_end(ap);
+	
+    packrat::logger::get()->log(file, line, msg, (log_level)severity);
+	free(msg);
 }
 

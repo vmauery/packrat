@@ -67,7 +67,7 @@ class screen_base {
 	
 	protected:
 		screen_base() { }
-		screen_base(const char *id);
+		screen_base(std::string id);
 	
 	public:
 		virtual ~screen_base();
@@ -80,6 +80,7 @@ class screen_base {
 		virtual int action(int key);
 		virtual int close();
 		virtual void show();
+		virtual void enter();
 		virtual void draw_cursor(int row, int col);
 		virtual void erase_cursor(int row, int col);
 		int keypressed ();
@@ -99,8 +100,11 @@ class screen_base {
 		int cols_;
 		int cursor_x_;
 		int cursor_y_;
+		int show_cursor_;
 		std::string title_;
 		std::string id_;
+		char *blank_line_;
+		bool refresh_;
 
 		static int screen_count_;
 

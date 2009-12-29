@@ -45,5 +45,6 @@
 	__val = __val < __min ? __min: __val; \
 	__val > __max ? __max: __val; })
 
+#define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 #endif // __PACKRAT_H__

@@ -20,8 +20,10 @@
 
 #include <screen_base.h>
 #include <application.h>
+#include <string.h>
 
 using namespace packrat;
+using std::string;
 
 int screen_base::screen_count_ = 0;
 
@@ -34,13 +36,12 @@ static int _status_line_init(WINDOW *nwin, int cols) {
 	return 0;
 }
 
-screen_base::screen_base(const char *id)
+screen_base::screen_base(string id)
 		: row_offset_(0), col_offset_(0),
-		  cursor_x_(0), cursor_y_(0), id_(id)
+		  cursor_x_(0), cursor_y_(0), show_cursor_(0), id_(id)
 {
-	if (screen_count_ == 0) {
+	if (screen_count_++ == 0) {
 		info("global screen_base initialization");
-		screen_count_++;
 		(void) ripoffline(-1, _status_line_init); // remove a line from the bottom for our status line
 		status_ = _tmp_status_win;
 		_tmp_status_win = NULL;
@@ -56,7 +57,7 @@ screen_base::screen_base(const char *id)
 		{
 			start_color();
 			info("COLOR_PAIRS="<<COLOR_PAIRS);
-
+			// TODO: add a few more colors?
 			init_pair(color_normal, COLOR_WHITE, COLOR_BLACK);
 			init_pair(color_header, COLOR_GREEN, COLOR_BLACK);
 			init_pair(color_quote_even, COLOR_MAGENTA, COLOR_BLACK);
@@ -83,12 +84,18 @@ screen_base::screen_base(const char *id)
 	keypad(window_, TRUE);  /* enable keyboard mapping */
 	// set the size
 	getmaxyx(window_, rows_, cols_);
+	blank_line_ = new char[cols_+1];
+	memset(blank_line_, ' ', cols_);
+	blank_line_[cols_] = 0;
+	info("screen_count_: "<<screen_count_);
 }
 	
 screen_base::~screen_base() {
 	// destroy the window
+	info("screen_count_: "<<screen_count_);
 	info("destructor: "<<id());
 	delwin(window_);
+	delete [] blank_line_;
 	if (--screen_count_ == 0) {
 		info("global screen_base destructor");
 		endwin();
@@ -98,6 +105,8 @@ screen_base::~screen_base() {
 void screen_base::cursor_move_col(int count) {
 	count += cursor_x_;
 	cursor_x_ = minmax(count, 0, cols_-1);
+	this->draw_cursor(cursor_y_, cursor_x_);
+	refresh_ = true;
 }
 
 void screen_base::cursor_move_row(int count) {
@@ -109,6 +118,7 @@ void screen_base::cursor_move_row(int count) {
 	if (scroll_lines) {
 		// we tried to move past the top or bottom of the screen
 		scroll_vertical(scroll_lines);
+		this->_draw_line(cursor_y_);
 	}
 	// draw the new cursor
 	this->draw_cursor(cursor_y_, cursor_x_);
@@ -116,6 +126,7 @@ void screen_base::cursor_move_row(int count) {
 
 void screen_base::draw_cursor(int row, int col) {
 	wmove(window_, row, col);
+	refresh_ = true;
 }
 
 void screen_base::erase_cursor(int row, int col) {
@@ -137,9 +148,12 @@ void screen_base::scroll_vertical(int count) {
 	row_offset_ += count;
 	info("scroll_vertical: row_offset_: "<<row_offset_<<", nlines: "
 	    <<nlines<<", count: "<<count<<", rows_:"<<rows_);
-	if (count)
+	if (count) {
+		info("scrolling "<<count<<" lines");
+		scrollok(window_, TRUE);
 		wscrl(window_, count);
-	// draw more lines to fill in the void
+		scrollok(window_, FALSE);
+	}
 }
 
 void screen_base::scroll_horizontal(int count) {
@@ -173,6 +187,22 @@ int screen_base::action(int key) {
 		case '/':
 			// start the search
 			break;
+		case 5:
+			// ctrl-e (scroll up)
+			this->erase_cursor(cursor_y_, cursor_x_);
+			this->scroll_vertical(1);
+			this->_draw_line(rows_-1);
+			this->draw_cursor(cursor_y_, cursor_x_);
+			refresh_ = true;
+			break;
+		case 25:
+			// ctrl-y (scroll down)
+			this->erase_cursor(cursor_y_, cursor_x_);
+			this->scroll_vertical(-1);
+			this->_draw_line(0);
+			this->draw_cursor(cursor_y_, cursor_x_);
+			refresh_ = true;
+			break;
 		case KEY_UP:
 			info("move cursor up");
 			this->cursor_move_row(-1);
@@ -193,12 +223,23 @@ int screen_base::action(int key) {
 			handled = 0;
 			break;
 	}
+	if (refresh_) {
+		refresh_ = false;
+		wrefresh(window_);
+	}
 	return handled;
 }
 
 int screen_base::close() {
 	// prompt for saving/closing?
 	return 0;
+}
+
+void screen_base::enter() {
+	// set cursor
+	curs_set(show_cursor_);
+	// set echo??
+	// set something else??
 }
 
 void screen_base::show() {
@@ -208,11 +249,16 @@ void screen_base::show() {
 void screen_base::_draw_line(int row) {
 	info("_draw_line: cols_ = " << cols_);
 	mvwaddnstr(window_, row, 0, buffer_->get_line(row+row_offset_), cols_-10);
+	int x = getcurx(window_);
+	waddnstr(window_, blank_line_, cols_-x);
+	refresh_ = true;
 }
 
 void screen_base::_show_title() {
-	here();
-	printf("\033]; %s \007", title_.c_str());
+	if (settings::env("TERM") == "xterm") {
+		info("setting title to '"<<title_.c_str()<<"'");
+		fprintf(stdout, "\033]; %s \007", title_.c_str());
+	}
 }
 
 int screen_base::keypressed() {

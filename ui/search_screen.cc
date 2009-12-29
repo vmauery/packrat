@@ -24,22 +24,23 @@
 #include <search_buffer.h>
 
 using namespace packrat;
+using std::string;
 
 search_screen::search_screen() {
 }
 
-search_screen::search_screen(const char *search)
+search_screen::search_screen(string search)
 		: screen_base(search)
 {
 	// init the screen_base
-	curs_set(0);
 	buffer_ = search_buffer::create(rows_, cols_, search);
+	title_ = search;
 }
 
 search_screen::~search_screen() {
 }
 
-screen_base::ptr search_screen::create(const char *search) {
+screen_base::ptr search_screen::create(string search) {
 	screen_base::ptr ret(new search_screen(search));
 	return ret;
 }
@@ -99,5 +100,3 @@ void search_screen::show() {
 	}
 }
 
-void search_screen::_show_title() {
-}

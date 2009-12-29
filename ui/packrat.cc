@@ -19,6 +19,7 @@
  */
 
 #include <application.h>
+#include <gmime/gmime.h>
 
 using namespace packrat;
 
@@ -29,10 +30,12 @@ int main(int argc, const char *argv[]) {
 	
 	// set up logging
 	logger::ptr log = logger::get();
-	log->add_target("log", LL_Info, true);
+	log->add_target("log", LL_Info);
 	info("Welcome to packrat, the mail client for digital horders");
 
 	settings::ptr config = settings::load(argc, argv);
+
+	g_mime_init(0);
 
 	// create the application
 	application::ptr app = application::get();

@@ -3,7 +3,7 @@
 	|		* setup? (a text file)
 	|	
 0 	|	* a couple of screens
-0	|		* thread
+x	|		* thread
 x	|		* search results (all search results are same cost)
 	|			index (search results of tag:inbox)
 	|			tags (search results of tag:...)
@@ -18,9 +18,9 @@ x	|		* search results (all search results are same cost)
 	|		* saved searches
 	|	
 x	|	class screen
-0	|		scrolling pages
+x	|		scrolling pages
 x	|		cursor up/down
-0	|		cursor left/right
+x	|		cursor left/right
 x	|		action on a line
 	|		overall status on a line
 x	|		close buffer
@@ -47,9 +47,9 @@ x	|	class search_screen <- screen
 	|			select threads (select all -- including other pages)
 	|				all actions on single thread can be done on multiple threads
 	|	
-0	|	class thread_screen <- screen
-0	|		contains a thread
-0	|		pages up and down in thread
+x	|	class thread_screen <- screen
+x	|		contains a thread
+x	|		pages up and down in thread
 	|		take different action based on whether on collapsed
 	|			line or on regular line
 	|		actions
@@ -66,6 +66,7 @@ x	|	class search_screen <- screen
 	|			edit as new (message)
 	|			search within thread (collapsed or not)
 	|			view attachment (possibly external viewer)
+0	|			save attachment
 	|			run hyperlinks (http, ftp, mailto)
 	|	
 	|	class message_preview <- screen
@@ -90,9 +91,10 @@ x	|	class search_screen <- screen
 	|		add
 	|		possibly an ldap hook?
 	|	
-0	|	class thread
-0	|		render a one line blurb
-0	|		render the whole thread (with quoting collapsed)
+x	|	class thread
+x	|		render a one line blurb
+x	|		render the whole thread
+0	|			with quoting collapsed
 	|			highlight hyperlinks
 	|		re-render parts (expand/collapse messages)
 0	|		responds to actions from thread_screen
@@ -103,6 +105,6 @@ x	|	class search_screen <- screen
 	|			text/plain (if we find a patch, render it as such)
 	|				first line ^---, second line ^+++, third line ^@@...@@$
 	|			text/x-patch
-0	|			text/x-... (render as text/plain for starters)
+x	|			text/x-... (render as text/plain for starters)
 	|				render using vim highlighting???
 	|		launch viewer

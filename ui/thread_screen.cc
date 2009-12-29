@@ -18,33 +18,77 @@
  * Author: Vernon Mauery <vernon@mauery.com>
  */
 
+#include <curses.h>
+#include <iostream>
 #include <thread_screen.h>
+#include <thread_buffer.h>
+#include <application.h>
 
 using namespace packrat;
+using std::string;
 
 thread_screen::thread_screen() {
 }
 
-thread_screen::thread_screen(const char *thread_id)
-		: screen_base(thread_id) {
+thread_screen::thread_screen(thread::ptr thread)
+		: screen_base(thread->id())
+{
+	// init the screen_base
+	buffer_ = thread_buffer::create(rows_, cols_, thread);
+	title_ = thread->subject();
+	show_cursor_ = 1;
 }
 
 thread_screen::~thread_screen() {
 }
 
-screen_base::ptr thread_screen::create(const char *thread_id) {
-	screen_base::ptr ret(new thread_screen(thread_id));
+screen_base::ptr thread_screen::create(thread::ptr thread) {
+	screen_base::ptr ret(new thread_screen(thread));
 	return ret;
 }
 
+/*
 void thread_screen::cursor_move_col(int count) {
+	
 }
 
 void thread_screen::cursor_move_row(int count) {
 }
 
+void thread_screen::draw_cursor(int row, int col) {
+	info("draw_cursor: row "<<row);
+	wattron(window_, COLOR_PAIR(color_c_normal));
+	_draw_line(row);
+	wattroff(window_, COLOR_PAIR(color_c_normal));
+}
+
+void thread_screen::erase_cursor(int row, int col) {
+	info("erase_cursor: row "<<row);
+	wattroff(window_, COLOR_PAIR(color_c_normal));
+	_draw_line(row);
+}
+*/
+
 int thread_screen::action(int key) {
-	return 0;
+	int handled = screen_base::action(key);
+	if (handled)
+		return handled;
+	handled = 1;
+	switch(key) {
+		case KEY_ENTER:
+		case 10:
+			break;
+		case 'a':
+			info("archive thread "<<thread_->id());
+		case 'q':
+			info("exit thread buffer "<<thread_->id());
+			application::get()->close_screen();
+			break;
+		default:
+			handled = 0;
+			break;
+	}
+	return handled;
 }
 
 int thread_screen::close() {
@@ -52,4 +96,10 @@ int thread_screen::close() {
 }
 
 void thread_screen::show() {
+	screen_base::show();
+	int row;
+	for (row = 0; row < rows_; row++) {
+		_draw_line(row);
+	}
+	draw_cursor(cursor_y_, cursor_x_);
 }

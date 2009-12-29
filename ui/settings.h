@@ -47,6 +47,7 @@ class settings {
 	public:
 		~settings();
 		std::string item(std::string name, std::string def);
+		static std::string env(std::string name);
 
 	protected:
 		static boost::shared_ptr<settings> instance_;

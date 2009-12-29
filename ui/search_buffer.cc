@@ -32,10 +32,10 @@ using std::setw;
 using std::setfill;
 using std::left;
 
-search_buffer::search_buffer(int rows, int cols, const char *search)
+search_buffer::search_buffer(int rows, int cols, string search)
 		: buffer(rows, cols) {
 	int line;
-	query_ = notmuch_query_create(application::get()->db(), search);
+	query_ = notmuch_query_create(application::get()->db(), search.c_str());
 	// fill the threads_ vector
 	info ("rows is " << rows << ", rows_ is " << rows_);
 	notmuch_threads_t *threads = notmuch_query_search_threads(query_);
@@ -43,7 +43,7 @@ search_buffer::search_buffer(int rows, int cols, const char *search)
 		 notmuch_threads_advance (threads), ++line)
 	{
 		info("grabbing thread #"<<line);
-		threads_[line] = notmuch_threads_get (threads);
+		threads_[line] = thread::create(notmuch_threads_get(threads));
 	}
 }
 
@@ -51,7 +51,7 @@ search_buffer::~search_buffer() {
 	notmuch_query_destroy(query_);
 }
 
-search_buffer::ptr search_buffer::create(int rows, int cols, const char *search) {
+search_buffer::ptr search_buffer::create(int rows, int cols, string search) {
 	search_buffer::ptr ret(new search_buffer(rows, cols, search));
 	return ret;
 }
@@ -62,7 +62,7 @@ int search_buffer::action(int action_id, int row, int col) {
 	// is the entire row and an action anywhere in that row is the
 	// same for the entire row
 	int offset = page_ * rows_ + row;
-	notmuch_thread_t *thread = threads_[offset];
+	thread::ptr thread = threads_[offset];
 	// select the thread
 	switch (action_id) {
 		case ARCHIVE_THREAD:
@@ -103,8 +103,8 @@ int search_buffer::action(int action_id, int row, int col) {
 			break;
 		case VIEW_THREAD:
 			// open the thread view for this thread
-			info("open thread screen for: '" << notmuch_thread_get_subject(thread) << "'");
-			//application::get()->thread_screen(thread_id);
+			info("open thread screen for: '" << thread->subject() << "'");
+			application::get()->thread_screen(thread);
 			break;
 		default:
 			handled = 0;
@@ -124,14 +124,16 @@ void search_buffer::page(int line_offset) {
 const char *search_buffer::get_line(int offset) {
 	info("get_line: offset = "<<offset);
 	if (thread_lines_.find(offset) == thread_lines_.end()) {
-		notmuch_thread_t *thread = threads_[offset];
+		thread::ptr thread = threads_[offset];
+		// eventually this should be replaced by a call to thread::blurb()
+
 		int author_width = 35;
 		int subject_width = 40;
 
 		// TODO: notmuch_thread_get_tags(notmuch_thread_t *thread);
-		int count = notmuch_thread_get_total_messages(thread);
-		string authors = notmuch_thread_get_authors(thread);
-		string subject = notmuch_thread_get_subject(thread);
+		int count = thread->db_message_count();
+		string authors = thread->authors();
+		string subject = thread->subject();
 		std::stringstream ss;
 		ss << left << setfill(' ')
 		   << setw(author_width) << authors.substr(0,author_width) << " ";

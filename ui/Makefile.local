@@ -6,6 +6,8 @@ packrat_cxx_srcs =		\
 	$(dir)/logging.cc 	\
 	$(dir)/settings.cc \
 	$(dir)/buffer.cc \
+	$(dir)/message.cc \
+	$(dir)/thread.cc \
 	$(dir)/search_buffer.cc \
 	$(dir)/thread_buffer.cc \
 	$(dir)/screen_base.cc \

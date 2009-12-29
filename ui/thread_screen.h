@@ -26,6 +26,7 @@
 
 #include <packrat.h>
 #include <screen_base.h>
+#include <thread.h>
 
 namespace packrat {
 
@@ -46,21 +47,25 @@ class thread_screen : public screen_base {
 	
 	protected:
 		thread_screen();
-		thread_screen(const char *thread_id);
+		thread_screen(thread::ptr thread);
 	
 	public:
 		virtual ~thread_screen();
 
-		static screen_base::ptr create(const char *thread_id);
+		static screen_base::ptr create(thread::ptr thread);
 
-		virtual void cursor_move_col(int count);
-		virtual void cursor_move_row(int count);
+		//virtual void cursor_move_col(int count);
+		//virtual void cursor_move_row(int count);
+
+		//virtual void draw_cursor(int row, int col);
+		//virtual void erase_cursor(int row, int col);
+
 		virtual int action(int key);
 		virtual int close();
 		virtual void show();
 
 	protected:
-		//virtual void _show_title();
+		thread::ptr thread_;
 
 };
 

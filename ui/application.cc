@@ -22,7 +22,6 @@
 #include <search_screen.h>
 #include <thread_screen.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 using namespace packrat;
 using std::string;
@@ -31,10 +30,9 @@ using std::map;
 application::ptr application::instance_;
 
 application::application() {
-	string default_path;
-	const char *home = getenv("HOME");
-	if (home) {
-		default_path = string(home) + "/mail";
+	string default_path = settings::env("HOME");
+	if (default_path.length() > 0) {
+		default_path += "/mail";
 	}
 	db_ = notmuch_database_open(settings::get("db_path", default_path).c_str(),
 			NOTMUCH_DATABASE_MODE_READ_ONLY);
@@ -61,11 +59,14 @@ void application::run() {
 
 	current_ = search_screen("tag:inbox");
 	running_ = true;
+
+	current_->enter();
 	current_->show();
 	while (running_) {
 		// show the current screen_base
 		if (current_ != next_) {
 			current_ = next_;
+			current_->enter();
 			current_->show();
 		}
 		// get a key
@@ -83,7 +84,7 @@ void application::run() {
 }
 
 void application::close_screen() {
-	std::map<const char*,screen_base::ptr>::iterator s;
+	map<string,screen_base::ptr>::iterator s;
 	for (s=screens_.begin(); s!=screens_.end(); s++) {
 		if (s->second == current_) {
 			screens_.erase(s);
@@ -98,17 +99,17 @@ void application::close_screen() {
 	next_ = screens_.begin()->second;
 }
 
-screen_base::ptr application::thread_screen(const char *thread_id) {
-	if (screens_.find(thread_id) != screens_.end()) {
-		next_ = screens_[thread_id];
+screen_base::ptr application::thread_screen(thread::ptr thread) {
+	if (screens_.find(thread->id()) != screens_.end()) {
+		next_ = screens_[thread->id()];
 	} else {
-		next_ = screens_[thread_id] = thread_screen::create(thread_id);
+		next_ = screens_[thread->id()] = thread_screen::create(thread);
 		// TODO: to save state, here is where we would do it
 	}
 	return next_;
 }
 
-screen_base::ptr application::search_screen(const char *search) {
+screen_base::ptr application::search_screen(string search) {
 	if (screens_.find(search) != screens_.end()) {
 		next_ = screens_[search];
 	} else {

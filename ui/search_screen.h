@@ -46,12 +46,12 @@ class search_screen : public screen_base {
 	
 	protected:
 		search_screen();
-		search_screen(const char *search);
+		search_screen(std::string search);
 	
 	public:
 		virtual ~search_screen();
 
-		static screen_base::ptr create(const char *search);
+		static screen_base::ptr create(std::string search);
 
 		//virtual void cursor_move_col(int count);
 		//virtual void cursor_move_row(int count);
@@ -64,7 +64,7 @@ class search_screen : public screen_base {
 		virtual void show();
 
 	protected:
-		virtual void _show_title();
+		//virtual void _show_title();
 
 };
 

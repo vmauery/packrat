@@ -25,7 +25,7 @@
  *  START DATE: 2003/JUN/28
  *
  *   COPYRIGHT: 2003 by Darren Hart, Vernon Mauery, Marc Strämke, Dirk Hörner
- *     LICENSE: This software is licenced under the Libstk license available with the source as 
+ *     LICENSE: This software is licenced under the Libstk license available with the source as
  *              license.txt or at http://www.libstk.org/index.php?page=docs/license
  *************************************************************************************************/
 
@@ -35,6 +35,9 @@
 #define HAVE_LOGGING 1
 
 #ifdef HAVE_LOGGING
+
+#ifdef __cplusplus
+
 #include <sstream>
 #include <boost/shared_ptr.hpp>
 #include <list>
@@ -131,11 +134,21 @@ namespace packrat
 }
 #define here(A) info("")
 
-#else
+#else // __cplusplus
+
+#define info(FMT, ...) _log(0, __FILE__, __LINE__, FMT, ##__VA_ARGS__)
+#define warn(FMT, ...) _log(1, __FILE__, __LINE__, FMT, ##__VA_ARGS__)
+#define error(FMT, ...) _log(2, __FILE__, __LINE__, FMT, ##__VA_ARGS__)
+#define here(A) info("")
+void _log(int severity, const char *file, int line, const char *fmt, ...);
+
+#endif // __cplusplus
+
+#else // LOGGING
 #define here(A)
 #define info(msg)
 #define warn(msg)
 #define error(msg)
-#endif
+#endif // LOGGING
 
 #endif

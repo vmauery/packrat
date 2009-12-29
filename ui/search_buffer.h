@@ -28,6 +28,7 @@
 #include <notmuch.h>
 #include <packrat.h>
 #include <buffer.h>
+#include <thread.h>
 
 namespace packrat {
 
@@ -63,11 +64,11 @@ class search_buffer : public buffer {
 		static const int VIEW_THREAD = 12;
 
 		static boost::shared_ptr<search_buffer>
-			create(int rows, int cols, const char *search);
+			create(int rows, int cols, std::string search);
 
 	protected:
 		search_buffer() : buffer() { }
-		search_buffer(int rows, int cols, const char *search);
+		search_buffer(int rows, int cols, std::string search);
 	
 	public:
 		virtual ~search_buffer();
@@ -88,7 +89,7 @@ class search_buffer : public buffer {
 
 	protected:
 		// a sparse array of thread_id strings
-		std::map<int, notmuch_thread_t*> threads_;
+		std::map<int, thread::ptr> threads_;
 		std::map<int, std::string> thread_lines_;
 		notmuch_query_t *query_;
 };

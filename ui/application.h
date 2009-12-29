@@ -23,6 +23,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <map>
+#include <string>
 #include <notmuch.h>
 #include <packrat.h>
 
@@ -31,6 +32,7 @@ namespace packrat {
 class screen_base;
 
 class application;
+class thread;
 class application {
 	public:
 		typedef boost::shared_ptr<application> ptr;
@@ -52,15 +54,15 @@ class application {
 		// these two methods either create a new screen_base for the
 		// requested item or open the existing named screen_base
 		// and set that as next_
-		boost::shared_ptr<screen_base> thread_screen(const char *thread_id);
-		boost::shared_ptr<screen_base> search_screen(const char *search);
+		boost::shared_ptr<screen_base> thread_screen(boost::shared_ptr<thread> thread);
+		boost::shared_ptr<screen_base> search_screen(std::string search);
 
 		notmuch_database_t *db() { return db_; }
 
 	protected:
 		static boost::shared_ptr<application> instance_;
 
-		std::map<const char*,boost::shared_ptr<screen_base> > screens_;
+		std::map<std::string,boost::shared_ptr<screen_base> > screens_;
 		boost::shared_ptr<screen_base> current_;
 		boost::shared_ptr<screen_base> next_;
 		bool running_;
