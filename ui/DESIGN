@@ -26,7 +26,7 @@ x	|		action on a line
 x	|		close buffer
 	|		show buffer list (jump to buffer)
 	|		goto inbox
-0	|		next buffer
+x	|		next buffer
 	|	
 x	|	class search_screen <- screen
 0	|		retrieve paging results (possibly in background,

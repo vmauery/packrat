@@ -203,6 +203,10 @@ int screen_base::action(int key) {
 			this->draw_cursor(cursor_y_, cursor_x_);
 			refresh_ = true;
 			break;
+		case 'b':
+			// next buffer
+			application::get()->next_buffer();
+			break;
 		case KEY_UP:
 			info("move cursor up");
 			this->cursor_move_row(-1);

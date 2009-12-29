@@ -50,6 +50,7 @@ class application {
 		void quit() { running_ = false; }
 
 		void close_screen();
+		void next_buffer();
 
 		// these two methods either create a new screen_base for the
 		// requested item or open the existing named screen_base

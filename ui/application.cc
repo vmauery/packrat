@@ -99,6 +99,21 @@ void application::close_screen() {
 	next_ = screens_.begin()->second;
 }
 
+void application::next_buffer() {
+	map<string,screen_base::ptr>::iterator s;
+	for (s=screens_.begin(); s!=screens_.end(); s++) {
+		if (s->second == current_) {
+			s++;
+			if (s == screens_.end()) {
+				s = screens_.begin();
+			}
+			next_ = s->second;
+			break;
+		}
+	}
+	info("current: "<<current_->id()<<", next: " <<next_->id());
+}
+
 screen_base::ptr application::thread_screen(thread::ptr thread) {
 	if (screens_.find(thread->id()) != screens_.end()) {
 		next_ = screens_[thread->id()];
