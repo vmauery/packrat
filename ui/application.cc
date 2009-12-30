@@ -53,6 +53,13 @@ application::ptr application::get() {
 	return instance_;
 }
 
+void application::shutdown() {
+	screens_.clear();
+	next_.reset();
+	current_.reset();
+	running_ = false;
+}
+
 void application::run() {
 	// get the last known state?  OOOOHHHH!!!!
 	// or just get the inbox search screen_base

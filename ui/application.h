@@ -48,6 +48,7 @@ class application {
 
 		void run();
 		void quit() { running_ = false; }
+		void shutdown();
 
 		void close_screen();
 		void next_buffer();

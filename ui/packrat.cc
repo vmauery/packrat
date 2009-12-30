@@ -20,10 +20,27 @@
 
 #include <application.h>
 #include <gmime/gmime.h>
+#include <iostream>
 
 using namespace packrat;
 
-// TODO: add some config file and command line stuff here
+void quit(int sig) {
+	const char *signame;
+	switch (sig) {
+		case SIGINT: signame = "SIGINT"; break;
+		case SIGQUIT: signame = "SIGQUIT"; break;
+		case SIGTERM: signame = "SIGTERM"; break;
+		case SIGABRT: signame = "SIGABRT"; break;
+		case SIGPIPE: signame = "SIGPIPE"; break;
+		case SIGHUP: signame = "SIGHUP"; break;
+		case SIGSEGV: signame = "SIGSEGV"; break;
+		default: signame = "SIG???"; break;
+	}
+	error("Received signal " << signame << "(" << sig << "), quitting...");
+	application::get()->shutdown();
+	std::cerr << "Received signal " << signame << "(" << sig << "), quitting..." << std::endl;
+	exit(1);
+}
 
 int main(int argc, const char *argv[]) {
 	// parse args
@@ -36,6 +53,14 @@ int main(int argc, const char *argv[]) {
 	settings::ptr config = settings::load(argc, argv);
 
 	g_mime_init(0);
+
+	signal(SIGINT, quit);
+	signal(SIGQUIT, quit);
+	signal(SIGTERM, quit);
+	signal(SIGABRT, quit);
+	signal(SIGPIPE, quit);
+	signal(SIGHUP, quit);
+	signal(SIGSEGV, quit);
 
 	// create the application
 	application::ptr app = application::get();
