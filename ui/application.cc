@@ -30,11 +30,15 @@ using std::map;
 application::ptr application::instance_;
 
 application::application() {
-	string default_path = settings::env("HOME");
+	string default_path = settings::get("home");
 	if (default_path.length() > 0) {
 		default_path += "/mail";
 	}
-	db_ = notmuch_database_open(settings::get("db_path", default_path).c_str(),
+	string db_path = settings::get("db_path", default_path);
+	if (db_path[0] == '~' && db_path[1] == '/') {
+		db_path = settings::get("home") + db_path.substr(1);
+	}
+	db_ = notmuch_database_open(db_path.c_str(),
 			NOTMUCH_DATABASE_MODE_READ_ONLY);
 	if (!db_) {
 		error("failed to open notmuch database");

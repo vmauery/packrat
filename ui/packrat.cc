@@ -21,8 +21,10 @@
 #include <application.h>
 #include <gmime/gmime.h>
 #include <iostream>
+#include <string>
 
 using namespace packrat;
+using std::string;
 
 void quit(int sig) {
 	const char *signame;
@@ -36,9 +38,8 @@ void quit(int sig) {
 		case SIGSEGV: signame = "SIGSEGV"; break;
 		default: signame = "SIG???"; break;
 	}
-	error("Received signal " << signame << "(" << sig << "), quitting...");
 	application::get()->shutdown();
-	std::cerr << "Received signal " << signame << "(" << sig << "), quitting..." << std::endl;
+	error("Received signal " << signame << "(" << sig << "), quitting...");
 	exit(1);
 }
 
@@ -47,10 +48,28 @@ int main(int argc, const char *argv[]) {
 	
 	// set up logging
 	logger::ptr log = logger::get();
-	log->add_target("log", LL_Info);
-	info("Welcome to packrat, the mail client for digital horders");
+	log->add_target(&std::cerr, LL_Error);
 
 	settings::ptr config = settings::load(argc, argv);
+
+	// set verbosity
+	string value = settings::get("verbose");
+	log_level v = LL_None;
+	if (value == "none") {
+		log->remove_target(&std::cerr);
+	} else if (value == "info") {
+		v = LL_Info;
+	} else if (value == "warn") {
+		v = LL_Warning;
+	} else if (value == "error") {
+		v = LL_Error;
+	}
+	value = settings::get("log", "");
+	if (value.length() > 0 && v != LL_None) {
+		log->add_target(value.c_str(), v);
+	}
+
+	info("Welcome to packrat, the mail client for digital horders");
 
 	g_mime_init(0);
 

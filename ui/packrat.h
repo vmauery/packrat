@@ -23,28 +23,6 @@
 
 #include <logging.h>
 #include <settings.h>
-
-#define min(x, y) ({                \
-	typeof(x) _min1 = (x);          \
-	typeof(y) _min2 = (y);          \
-	(void) (&_min1 == &_min2);      \
-	_min1 < _min2 ? _min1 : _min2; })
-
-#define max(x, y) ({                \
-	typeof(x) _max1 = (x);          \
-	typeof(y) _max2 = (y);          \
-	(void) (&_max1 == &_max2);      \
-	_max1 > _max2 ? _max1 : _max2; })
-
-#define minmax(val, min, max) ({           \
-	typeof(val) __val = (val);            \
-	typeof(min) __min = (min);            \
-	typeof(max) __max = (max);            \
-	(void) (&__val == &__min);            \
-	(void) (&__val == &__max);            \
-	__val = __val < __min ? __min: __val; \
-	__val > __max ? __max: __val; })
-
-#define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
+#include <util.h>
 
 #endif // __PACKRAT_H__

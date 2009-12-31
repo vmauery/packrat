@@ -3,6 +3,7 @@ extra_cflags += -I$(dir) -Ilib
 extra_ldflags += -lncurses
 
 packrat_cxx_srcs =		\
+	$(dir)/util.cc \
 	$(dir)/logging.cc 	\
 	$(dir)/settings.cc \
 	$(dir)/buffer.cc \

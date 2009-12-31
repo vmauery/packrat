@@ -17,12 +17,18 @@
  *
  * Author: Vernon Mauery <vernon@mauery.com>
  */
+#include <stdlib.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <fstream>
+#include <iostream>
+#include <vector>
 
 #include <settings.h>
-#include <stdlib.h>
 
 using namespace packrat;
 using std::string;
+using std::vector;
 using std::map;
 
 settings::ptr settings::instance_;
@@ -47,9 +53,99 @@ settings::ptr settings::load(int argc, const char *argv[]) {
 
 settings::settings() { }
 
+#define setup_all_opt(id, arg, val) { #id, arg, NULL, val }
+#define setup_opt(id) setup_all_opt(id, 1, 0)
 settings::settings(int argc, const char *argv[]) {
-	items_["db_path"] = "/home/vhmauery/.mail/ltc-imap";
+	// when this function is called, only
+	// error will work because application has only
+	// registered at LL_Error on cerr until we know
+	// what the user wants to see and where to put it
+
+	string home = env("HOME");
+	if (home.length() == 0) {
+		string username = env("USERNAME");
+		if (username.length() > 0)
+			home = string("/home/")+username;
+	}
+	items_["home"] = home;
+	string defconfig = items_["config"] = home + "/.packratrc";
+	items_["verbose"] = "none";
+	items_["log"] = home+"/packrat.log";
+
+	struct option longopts[] = {
+		setup_opt(db_path),
+		setup_opt(full_name),
+		setup_opt(primary_email),
+		setup_opt(other_email),
+		setup_opt(bcc_self),
+		setup_all_opt(config, 1, 'c'),
+		setup_all_opt(verbose, 1, 'v'),
+		setup_all_opt(log, 1, 'l'),
+	};
+	char opts[ARRAY_SIZE(longopts)*3+1];
+	int i, j = 0;
+
+	for (i=0;i<(int)ARRAY_SIZE(longopts);i++) {
+		int c = longopts[i].val;
+		if (isalnum(c) || ispunct(c)) {
+			opts[j++] = c;
+			if (longopts[i].has_arg > 0)
+				opts[j++] = ':';
+			if (longopts[i].has_arg > 1)
+				opts[j++] = ':';
+		}
+	}
+	opts[j] = 0;
+
+	i = -1;
+	while ((j = getopt_long(argc, (char* const*)argv, opts, longopts, &i)) != -1) {
+		if (i < 0) {
+			for (i=0; i<(int)ARRAY_SIZE(longopts); i++) {
+				if (longopts[i].val == j)
+					break;
+			}
+		}
+		if (longopts[i].has_arg == 1) {
+			items_[longopts[i].name] = optarg;
+		} else if (longopts[i].has_arg == 2) {
+			if (optarg) {
+				items_[longopts[i].name] = optarg;
+			} else {
+				items_[longopts[i].name] = "yes";
+			}
+		} else {
+			items_[longopts[i].name] = "yes";
+		}
+		i = -1;
+	}
+
+	// parse the config file
+	std::ifstream conf(items_["config"].c_str());
+	if (!conf) {
+		if (items_["config"] == defconfig) {
+			error("no config file found... this may not work well");
+		} else {
+			error("failed to open config file");
+			exit(1);
+		}
+	} else {
+		string line, full_line;
+		vector<string> parts;
+		while (!conf.eof()) {
+			getline(conf, full_line);
+			line = full_line.substr(0, full_line.find('#'));
+			if (line.length() == 0)
+				continue;
+			parts = explode("=", line, 1);
+			if (parts.size() != 2) {
+				error("Ignoring junk: " << full_line);
+			}
+			items_[stripws(parts[0])] = stripws(parts[1]);
+		}
+	}
 }
+#undef setup_all_opt
+#undef setup_opt
 
 settings::~settings() { }
 
