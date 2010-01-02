@@ -97,6 +97,7 @@ screen_base::~screen_base() {
 	delwin(window_);
 	delete [] blank_line_;
 	if (--screen_count_ == 0) {
+		delwin(status_);
 		info("global screen_base destructor");
 		endwin();
 	}
