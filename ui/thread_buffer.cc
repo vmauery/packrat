@@ -45,7 +45,8 @@ thread_buffer::ptr thread_buffer::create(int rows, int cols, thread::ptr thread)
 	return ret;
 }
 
-int thread_buffer::action(int action_id, int row, int col) {
+int thread_buffer::action(buffer_action_t action_id, int row, int col) {
+	here();
 	int handled = 1;
 	// columns don't matter in thread threades since each thread
 	// is the entire row and an action anywhere in that row is the
@@ -76,6 +77,13 @@ int thread_buffer::action(int action_id, int row, int col) {
 			break;
 		case MARK_THREAD_UNREAD:
 			// mark all message files with no S flag
+			break;
+		case REPLY_MESSAGE:
+			{
+				string file = thread_->get_message(row)->reply(msg_reply_all);
+				info("reply to in " << file);
+				application::get()->editor_screen(file);
+			}
 			break;
 		default:
 			handled = 0;

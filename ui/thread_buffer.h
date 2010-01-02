@@ -48,15 +48,6 @@ class thread_buffer : public buffer {
 		typedef boost::shared_ptr<thread_buffer> ptr;
 		typedef boost::weak_ptr<thread_buffer> wptr;
 
-		static const int ARCHIVE_THREAD = 0;
-		static const int DELETE_THREAD = 1;
-		static const int MARK_SPAM = 2;
-		static const int KILL_THREAD = 3;
-		static const int TAG_THREAD = 4;
-		static const int FORWARD_THREAD = 5;
-		static const int FLAG_THREAD = 6;
-		static const int MARK_THREAD_UNREAD = 7;
-
 		static boost::shared_ptr<thread_buffer>
 			create(int rows, int cols, thread::ptr thread);
 
@@ -70,7 +61,7 @@ class thread_buffer : public buffer {
 		// called when screen wants to perform an action
 		// on a line at a given y/x position the screen
 		// does the translation from y/x to a character pointer
-		virtual int action(int action_id, int row, int col);
+		virtual int action(buffer_action_t action_id, int row, int col);
 
 		// called on a window resize so the lines can be recalculated
 		virtual void resize(int y, int x);

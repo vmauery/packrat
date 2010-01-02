@@ -76,7 +76,7 @@ int search_screen::action(int key) {
 		case KEY_ENTER:
 		case 10:
 			// open message
-			buffer_->action(search_buffer::VIEW_THREAD, cursor_y_, cursor_x_);
+			buffer_->action(VIEW_THREAD, cursor_y_, cursor_x_);
 			break;
 		default:
 			handled = 0;

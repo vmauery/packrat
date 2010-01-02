@@ -97,10 +97,10 @@ const char *thread::get_line(int offset) {
 	info("get_line("<<offset<<")");
 	if (!loaded_messages_) {
 		info("loading messages");
+		info("have "<<messages_.size()<<" messages loaded");
 		load_messages();
 		render();
 	}
-	info("have "<<messages_.size()<<" messages loaded");
 	vector<int>::reverse_iterator i = line_offsets_.rbegin();
 	vector<message::ptr>::reverse_iterator m = messages_.rbegin();
 	for (; i != line_offsets_.rend() && m != messages_.rend(); i++, m++) {
@@ -109,6 +109,24 @@ const char *thread::get_line(int offset) {
 		}
 	}
 	return NULL;
+}
+
+message::ptr thread::get_message(int offset) {
+	info("get_message("<<offset<<")");
+	if (!loaded_messages_) {
+		info("loading messages");
+		info("have "<<messages_.size()<<" messages loaded");
+		load_messages();
+		render();
+	}
+	vector<int>::reverse_iterator i = line_offsets_.rbegin();
+	vector<message::ptr>::reverse_iterator m = messages_.rbegin();
+	for (; i != line_offsets_.rend() && m != messages_.rend(); i++, m++) {
+		if (*i <= offset) {
+			return *m;
+		}
+	}
+	return message::ptr();
 }
 
 // remove all tags

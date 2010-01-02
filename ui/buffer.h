@@ -40,6 +40,23 @@ namespace packrat {
  * the screen class.
  */
 
+	typedef enum {
+		ARCHIVE_THREAD,
+		DELETE_THREAD,
+		MARK_SPAM,
+		KILL_THREAD,
+		TAG_THREAD,
+		FORWARD_THREAD,
+		FLAG_THREAD,
+		MARK_THREAD_UNREAD,
+		SEARCH_THREADS,
+		SEARCH_SAVE,
+		SELECT_THREAD,
+		SELECT_ALL_THREADS,
+		VIEW_THREAD,
+		REPLY_MESSAGE,
+	} buffer_action_t;
+
 class buffer {
 	public:
 		typedef boost::shared_ptr<buffer> ptr;
@@ -55,7 +72,7 @@ class buffer {
 		// called when screen wants to perform an action
 		// on a line at a given y/x position the screen
 		// rows and col is the offset into that row on the current page
-		virtual int action(int action_id, int row, int col) = 0;
+		virtual int action(buffer_action_t action_id, int row, int col) = 0;
 
 		// called at render time to get each row to render
 		virtual const char *get_line(int offset) = 0;

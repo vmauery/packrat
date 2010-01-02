@@ -84,6 +84,11 @@ int thread_screen::action(int key) {
 			info("exit thread buffer "<<thread_->id());
 			application::get()->close_screen();
 			break;
+		case 'r':
+			info("thread_screen: reply to message");
+			buffer_->action(REPLY_MESSAGE, cursor_y_ + row_offset_,
+					cursor_x_ + col_offset_);
+			break;
 		default:
 			handled = 0;
 			break;

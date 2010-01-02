@@ -58,6 +58,7 @@ class application {
 		// and set that as next_
 		boost::shared_ptr<screen_base> thread_screen(boost::shared_ptr<thread> thread);
 		boost::shared_ptr<screen_base> search_screen(std::string search);
+		boost::shared_ptr<screen_base> editor_screen(std::string file);
 
 		notmuch_database_t *db() { return db_; }
 

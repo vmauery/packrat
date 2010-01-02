@@ -56,7 +56,7 @@ search_buffer::ptr search_buffer::create(int rows, int cols, string search) {
 	return ret;
 }
 
-int search_buffer::action(int action_id, int row, int col) {
+int search_buffer::action(buffer_action_t action_id, int row, int col) {
 	int handled = 1;
 	// columns don't matter in thread searches since each thread
 	// is the entire row and an action anywhere in that row is the

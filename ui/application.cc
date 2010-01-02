@@ -21,6 +21,7 @@
 #include <application.h>
 #include <search_screen.h>
 #include <thread_screen.h>
+#include <editor_screen.h>
 #include <stdio.h>
 
 using namespace packrat;
@@ -83,6 +84,7 @@ void application::run() {
 		// get a key
 		int ch = current_->keypressed();
 		// process the event globally
+		// not sure we should process globally or not...
 
 		// pass the event to the screen_base
 		if (!current_->action(ch)) {
@@ -140,6 +142,16 @@ screen_base::ptr application::search_screen(string search) {
 		next_ = screens_[search];
 	} else {
 		next_ = screens_[search] = search_screen::create(search);
+		// TODO: to save state, here is where we would do it
+	}
+	return next_;
+}
+
+screen_base::ptr application::editor_screen(string file) {
+	if (screens_.find(file) != screens_.end()) {
+		next_ = screens_[file];
+	} else {
+		next_ = screens_[file] = editor_screen::create(file);
 		// TODO: to save state, here is where we would do it
 	}
 	return next_;

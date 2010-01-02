@@ -23,10 +23,16 @@ extern "C" {
 }
 #include <iostream>
 #include <sstream>
-#include <message.h>
 #include <string.h>
 #include <errno.h>
 #include <gmime/gmime.h>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <message.h>
+#include <gmime-filter-reply.h>
 
 using namespace packrat;
 using std::string;
@@ -86,11 +92,6 @@ void message::mark_read(bool mark) {
 void message::mark_trash(bool mark) {
 }
 
-string message::reply(reply_who_t who) {
-	string ret;
-	return ret;
-}
-
 std::string message::forward() {
 	string ret;
 	return ret;
@@ -129,7 +130,7 @@ notmuch_messages_t *message::replies() {
 }
 
 static void show_part_content(GMimeObject *part, vector<string> &lines) {
-	GMimeStream *stream_stdout = NULL;
+	GMimeStream *stream_outmem = NULL;
 	GMimeStream *stream_filter = NULL;
 	GMimeStream *stream_bufout = NULL;
 	GMimeStream *stream_cat = NULL;
@@ -137,16 +138,18 @@ static void show_part_content(GMimeObject *part, vector<string> &lines) {
 	GMimeDataWrapper *wrapper;
 	const char *charset;
 
-	stream_stdout = g_mime_stream_mem_new();
+	here();
+	stream_outmem = g_mime_stream_mem_new();
 	stream_cat = g_mime_stream_cat_new();
-	g_mime_stream_cat_add_source(GMIME_STREAM_CAT(stream_cat), stream_stdout);
+	g_mime_stream_cat_add_source(GMIME_STREAM_CAT(stream_cat), stream_outmem);
 	stream_bufout = g_mime_stream_buffer_new(stream_cat,
 		GMIME_STREAM_BUFFER_BLOCK_READ);
 
+	here();
 	charset = g_mime_object_get_content_type_parameter(part, "charset");
 
-	if (stream_stdout) {
-		stream_filter = g_mime_stream_filter_new(stream_stdout);
+	if (stream_outmem) {
+		stream_filter = g_mime_stream_filter_new(stream_outmem);
 		g_mime_stream_filter_add(GMIME_STREAM_FILTER(stream_filter),
 				g_mime_filter_crlf_new(FALSE, FALSE));
 		if (charset) {
@@ -155,10 +158,12 @@ static void show_part_content(GMimeObject *part, vector<string> &lines) {
 		}
 	}
 
+	here();
 	wrapper = g_mime_part_get_content_object(GMIME_PART(part));
 	if (wrapper && stream_filter) {
 		g_mime_data_wrapper_write_to_stream(wrapper, stream_filter);
 
+	here();
 		GByteArray *line = g_byte_array_sized_new(4096);
 		while (!g_mime_stream_eos(stream_bufout)) {
 			g_mime_stream_buffer_readln(stream_bufout, line);
@@ -175,15 +180,87 @@ static void show_part_content(GMimeObject *part, vector<string> &lines) {
 			line->len = 0;
 			lines.push_back((const char *)line->data);
 		}
-
 	}
 	if (stream_filter)
 		g_object_unref(stream_filter);
-	if (stream_stdout)
-		g_object_unref(stream_stdout);
+	if (stream_cat)
+		g_object_unref(stream_cat);
+	if (stream_bufout)
+		g_object_unref(stream_bufout);
+	if (stream_outmem)
+		g_object_unref(stream_outmem);
+}
+
+static void show_part_content_reply(GMimeObject *part, FILE *file) {
+	GMimeStream *stream_fileout = NULL;
+	GMimeStream *stream_filter = NULL;
+
+	GMimeDataWrapper *wrapper;
+	const char *charset;
+
+	here();
+	stream_fileout = g_mime_stream_file_new(file);
+
+	charset = g_mime_object_get_content_type_parameter(part, "charset");
+
+	if (stream_fileout) {
+		stream_filter = g_mime_stream_filter_new(stream_fileout);
+		g_mime_stream_file_set_owner (GMIME_STREAM_FILE (stream_fileout), FALSE);		
+		if (charset) {
+			g_mime_stream_filter_add(GMIME_STREAM_FILTER(stream_filter),
+					g_mime_filter_charset_new(charset, "UTF-8"));
+		}
+		g_mime_stream_filter_add(GMIME_STREAM_FILTER(stream_filter),
+				g_mime_filter_reply_new(TRUE));
+	}
+
+	wrapper = g_mime_part_get_content_object(GMIME_PART(part));
+	if (wrapper && stream_filter) {
+		g_mime_data_wrapper_write_to_stream(wrapper, stream_filter);
+	}
+	if (stream_filter)
+		g_object_unref(stream_filter);
+	if (stream_fileout)
+		g_object_unref(stream_fileout);
 }
 
 static void show_part(GMimeObject *part, int *part_count, vector<string> &lines) {
+	GMimeContentDisposition *disposition;
+	GMimeContentType *content_type;
+	std::stringstream ss;
+	const char *filename = NULL;
+
+	here();
+	disposition = g_mime_object_get_content_disposition(part);
+	content_type = g_mime_object_get_content_type(GMIME_OBJECT(part));
+	if (disposition &&
+			strcmp(disposition->disposition, GMIME_DISPOSITION_ATTACHMENT) == 0)
+	{
+		filename = g_mime_part_get_filename(GMIME_PART(part));
+		ss << "Attachment: ID: " << *part_count << ", Content-type: "
+		   << g_mime_content_type_to_string(content_type)
+		   << ", Filename: " << filename;
+
+	here();
+		lines.push_back(ss.str());
+		lines.push_back("================================================================");
+	}
+
+	here();
+	if (g_mime_content_type_is_type(content_type, "text", "*") &&
+			!g_mime_content_type_is_type(content_type, "text", "html")) {
+	here();
+		show_part_content(part, lines);
+	} else {
+	here();
+		lines.push_back(string("Non-text attachment: ") +
+			g_mime_content_type_to_string(content_type));
+	}
+
+	return;
+}
+
+static void show_part_reply(GMimeObject *part, int *part_count, FILE *file) {
 	GMimeContentDisposition *disposition;
 	GMimeContentType *content_type;
 	std::stringstream ss;
@@ -199,30 +276,33 @@ static void show_part(GMimeObject *part, int *part_count, vector<string> &lines)
 		   << g_mime_content_type_to_string(content_type)
 		   << ", Filename: " << filename;
 
-		lines.push_back(ss.str());
-		lines.push_back("================================================================");
+		fprintf(file, "%s\n", ss.str().c_str());
+		fprintf(file, "================================================================\n");
 	}
 
 	if (g_mime_content_type_is_type(content_type, "text", "*") &&
 			!g_mime_content_type_is_type(content_type, "text", "html")) {
-		show_part_content(part, lines);
+		show_part_content_reply(part, file);
 	} else {
-		lines.push_back("Non-text content...");
+		fprintf(file, "Non-text attachment: %s\n",
+			g_mime_content_type_to_string(content_type));
 	}
 
 	return;
 }
 
-static void show_message_part(GMimeObject *part, int *part_count, vector<string> &lines) {
+static void show_message_part(GMimeObject *part, int *part_count,
+		boost::function<void(GMimeObject*,int*)> &callback) {
 	*part_count = *part_count + 1;
 
+	here();
 	if (GMIME_IS_MULTIPART(part)) {
 		GMimeMultipart *multipart = GMIME_MULTIPART(part);
 		int i;
 
 		for (i = 0; i < g_mime_multipart_get_count(multipart); i++) {
 			show_message_part(g_mime_multipart_get_part(multipart, i),
-					part_count, lines);
+					part_count, callback);
 		}
 		return;
 	}
@@ -233,7 +313,7 @@ static void show_message_part(GMimeObject *part, int *part_count, vector<string>
 		mime_message = g_mime_message_part_get_message(GMIME_MESSAGE_PART(part));
 
 		show_message_part(g_mime_message_get_mime_part(mime_message),
-				part_count, lines);
+				part_count, callback);
 
 		return;
 	}
@@ -244,10 +324,11 @@ static void show_message_part(GMimeObject *part, int *part_count, vector<string>
 		return;
 	}
 
-	show_part(part, part_count, lines);
+	callback(part, part_count);
 }
 
-int show_message_body(const char *filename, vector<string> &lines) {
+static int show_message_body(const char *filename,
+		boost::function<void(GMimeObject*,int*)> &callback) {
 	GMimeStream *stream = NULL;
 	GMimeParser *parser = NULL;
 	GMimeMessage *mime_message = NULL;
@@ -262,6 +343,7 @@ int show_message_body(const char *filename, vector<string> &lines) {
 		goto DONE;
 	}
 
+	here();
 	stream = g_mime_stream_file_new(file);
 	g_mime_stream_file_set_owner(GMIME_STREAM_FILE(stream), FALSE);
 
@@ -269,7 +351,8 @@ int show_message_body(const char *filename, vector<string> &lines) {
 
 	mime_message = g_mime_parser_construct_message(parser);
 
-	show_message_part(g_mime_message_get_mime_part(mime_message), &part_count, lines);
+	show_message_part(g_mime_message_get_mime_part(mime_message),
+		&part_count, callback);
 
 DONE:
 	if (mime_message)
@@ -338,7 +421,9 @@ void message::render(int indent) {
 
 	msg_lines_.push_back("");
 
-	show_message_body(notmuch_message_get_filename(message_), msg_lines_);
+	boost::function<void(GMimeObject*,int*)> callback =
+		boost::bind(show_part, _1, _2, boost::ref(msg_lines_));
+	show_message_body(notmuch_message_get_filename(message_), callback);
 	msg_lines_.push_back("");
 	msg_lines_.push_back("");
 
@@ -348,35 +433,184 @@ void message::render(int indent) {
 	}
 }
 
-/*
+static const struct {
+    const char *header;
+    const char *fallback;
+    GMimeRecipientType recipient_type;
+} reply_to_map[] = {
+    { "reply-to", "from", GMIME_RECIPIENT_TYPE_TO  },
+    { "to",         NULL, GMIME_RECIPIENT_TYPE_TO  },
+    { "cc",         NULL, GMIME_RECIPIENT_TYPE_CC  },
+    { "bcc",        NULL, GMIME_RECIPIENT_TYPE_BCC }
+};
 
-	static void
-show_messages(notmuch_messages_t *messages, int indent,
-		notmuch_bool_t entire_thread)
-{
-	notmuch_message_t *message;
-	notmuch_bool_t match;
-	int next_indent;
+static int
+address_is_users(const char *address) {
+    string primary;
+    vector<string> other;
+	vector<string>::iterator i;
 
-	for (;
-			notmuch_messages_has_more(messages);
-			notmuch_messages_advance(messages))
-	{
-		message = notmuch_messages_get(messages);
+	primary = settings::get("primary_email", "");
+	if (strcasecmp(primary.c_str(), address) == 0)
+		return 1;
 
-		match = notmuch_message_get_flag(message, NOTMUCH_MESSAGE_FLAG_MATCH);
-
-		next_indent = indent;
-
-		if (match || entire_thread) {
-			show_message_(message, indent);
-			next_indent = indent + 1;
-		}
-
-		show_messages(notmuch_message_get_replies(message),
-				next_indent, entire_thread);
-
-		notmuch_message_destroy(message);
+	other = explode(" \t,:;", settings::get("other_email", ""));
+	for (i=other.begin(); i!=other.end(); i++) {
+		if (strcasecmp(i->c_str(), address) == 0)
+			return 1;
 	}
+	return 0;
 }
-*/
+
+/* For each address in 'list' that is not configured as one of the
+ * user's addresses in 'config', add that address to 'message' as an
+ * address of 'type'.
+ *
+ * The first address encountered that *is* the user's address will be
+ * returned, (otherwise NULL is returned).
+ */
+static const char *
+add_recipients_for_address_list(GMimeMessage *message,
+				 GMimeRecipientType type,
+				 InternetAddressList *list) {
+    InternetAddress *address;
+    int i;
+    const char *ret = NULL;
+
+	for (i = 0; i < internet_address_list_length (list); i++) {
+		address = internet_address_list_get_address(list, i);
+		if (INTERNET_ADDRESS_IS_GROUP(address)) {
+			InternetAddressGroup *group;
+			InternetAddressList *group_list;
+
+			group = INTERNET_ADDRESS_GROUP(address);
+			group_list = internet_address_group_get_members(group);
+			if (group_list == NULL)
+				continue;
+
+			add_recipients_for_address_list(message,
+					type, group_list);
+		} else {
+			InternetAddressMailbox *mailbox;
+			const char *name;
+			const char *addr;
+
+			mailbox = INTERNET_ADDRESS_MAILBOX(address);
+
+			name = internet_address_get_name(address);
+			addr = internet_address_mailbox_get_addr(mailbox);
+
+			if (address_is_users (addr)) {
+				if (ret == NULL)
+					ret = addr;
+			} else {
+				g_mime_message_add_recipient(message, type, name, addr);
+			}
+		}
+	}
+
+	return ret;
+}
+
+/* For each address in 'recipients' that is not configured as one of
+ * the user's addresses in 'config', add that address to 'message' as
+ * an address of 'type'.
+ *
+ * The first address encountered that *is* the user's address will be
+ * returned, (otherwise NULL is returned).
+ */
+	static const char *
+add_recipients_for_string(GMimeMessage *message,
+		GMimeRecipientType type,
+		const char *recipients)
+{
+	InternetAddressList *list;
+
+	list = internet_address_list_parse_string(recipients);
+	if (list == NULL)
+		return NULL;
+
+	return add_recipients_for_address_list(message, type, list);
+}
+
+string message::reply(reply_who_t who) {
+	string header, header2;
+    GMimeMessage *msg;
+	const char *recipients, *from_addr = NULL;
+	int i;
+
+	/* The 1 means we want headers in a "pretty" order. */
+	msg = g_mime_message_new(1);
+	if (msg == NULL) {
+		error("out of memory");
+		return string();
+	}
+
+	header = notmuch_message_get_header(message_, "subject");
+	if (strcasecmp(header.substr(0,3).c_str(), "re:") != 0)
+		header = string("Re: ") + header;
+	g_mime_message_set_subject(msg, header.c_str());
+
+	for (i = 0; i < ARRAY_SIZE(reply_to_map); i++) {
+		const char *addr;
+
+		recipients = notmuch_message_get_header(message_,
+				reply_to_map[i].header);
+		if ((recipients == NULL || recipients[0] == '\0') && reply_to_map[i].fallback)
+			recipients = notmuch_message_get_header(message_,
+					reply_to_map[i].fallback);
+
+		addr = add_recipients_for_string(msg,
+				reply_to_map[i].recipient_type,
+				recipients);
+		if (from_addr == NULL)
+			from_addr = addr;
+	}
+
+	if (from_addr != NULL)
+		header = from_addr;
+	else
+		header = settings::get("primary_email", "");
+	
+
+	header = settings::get("full_name") + "<" + header;
+	g_mime_object_set_header(GMIME_OBJECT(msg),
+			"From", header.c_str());
+
+	if (settings::get("bcc_self", "yes") == "yes")
+		g_mime_object_set_header(GMIME_OBJECT(msg), "Bcc",
+				settings::get("primary_email", "").c_str());
+
+	header2 = string("<") +
+			notmuch_message_get_message_id(message_) + string(">");
+
+	g_mime_object_set_header(GMIME_OBJECT(msg),
+			"In-Reply-To", header2.c_str());
+
+	header = notmuch_message_get_header(message_, "references");
+	if (header.length() > 0)
+		header += " " + header2;
+	else
+		header = header2;
+	g_mime_object_set_header(GMIME_OBJECT(msg),
+			"References", header.c_str());
+
+	char tmpfname[256];
+	snprintf(tmpfname, sizeof(tmpfname), "/tmp/packrat-%d-msg.XXXXXX", getpid());
+	int fd_out = mkstemp(tmpfname);
+	info("reply mail is in "<<tmpfname);
+	// XXX error checking
+	FILE *file_out = fdopen(fd_out, "w");
+	fprintf(file_out, "%s", g_mime_object_to_string(GMIME_OBJECT(msg)));
+
+	g_object_unref(G_OBJECT(msg));
+
+	boost::function<void(GMimeObject*,int*)> callback =
+		boost::bind(show_part_reply, _1, _2, file_out);
+	show_message_body(notmuch_message_get_filename(message_), callback);
+	// what do we do with the file now... open the editor
+	// who is in control?
+	fclose(file_out);
+	return tmpfname;
+}
+

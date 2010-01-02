@@ -83,7 +83,7 @@ class screen_base {
 		virtual void enter();
 		virtual void draw_cursor(int row, int col);
 		virtual void erase_cursor(int row, int col);
-		int keypressed ();
+		virtual int keypressed ();
 		const char *id();
 
 	protected:

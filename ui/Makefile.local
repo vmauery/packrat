@@ -1,6 +1,6 @@
 dir=ui
-extra_cflags += -I$(dir) -Ilib
-extra_ldflags += -lncurses
+extra_cflags += -I$(dir) -Ilib -I.
+extra_ldflags += -lncurses -lutil
 
 packrat_cxx_srcs =		\
 	$(dir)/util.cc \
@@ -14,10 +14,14 @@ packrat_cxx_srcs =		\
 	$(dir)/screen_base.cc \
 	$(dir)/search_screen.cc	\
 	$(dir)/thread_screen.cc	\
+	$(dir)/editor_screen.cc	\
 	$(dir)/application.cc	\
 	$(dir)/packrat.cc
 
-packrat_modules = $(packrat_cxx_srcs:.cc=.o)
+packrat_c_srcs =		\
+	gmime-filter-reply.c
+
+packrat_modules = $(packrat_cxx_srcs:.cc=.o) $(packrat_c_srcs:.c=.o)
 
 $(dir)/packrat: $(packrat_modules) lib/notmuch.a
 	$(call quiet,CXX,$(LDFLAGS)) $^ $(FINAL_LDFLAGS) -o $@

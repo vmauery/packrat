@@ -63,6 +63,7 @@ class thread {
 
 		// here offset is the actual offset into the thread's lines
 		const char *get_line(int offset);
+		message::ptr get_message(int offset);
 
 		int nlines(void);
 
